@@ -1,0 +1,126 @@
+# ============================================================
+# Orquestación de producción: Caddy (HTTPS) + backend + frontend + Redis
+#
+# Requisitos previos:
+#   1) Copiar .env.example a .env y completar credenciales y dominio
+#   2) dns del dominio apuntando a la IP del VPS (puertos 80/443 abiertos)
+#
+# Arranque:  docker compose up -d --build
+# Logs:      docker compose logs -f backend
+# ============================================================
+
+services:
+  # ---------------- Reverse proxy con HTTPS automático ----------------
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"    # HTTP: redirige a HTTPS y valida el reto ACME
+      - "443:443"  # HTTPS
+    environment:
+      # Dominio para el certificado; en local usa caddy en :80 sin TLS
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+  # ---------------- API FastAPI ----------------
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    # Puerto publicado SOLO si quieres acceder sin proxy (p. ej. debugging);
+    # en producción puro deja comentado: Caddy habla con la red interna.
+    # ports:
+    #   - "8000:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      GEE_PROJECT: ${GEE_PROJECT:-egresados-q9tr}
+      GEE_SERVICE_ACCOUNT_EMAIL: ${GEE_SERVICE_ACCOUNT_EMAIL:?Falta GEE_SERVICE_ACCOUNT_EMAIL en .env}
+      GEE_PRIVATE_KEY_JSON: ${GEE_PRIVATE_KEY_JSON:?Falta GEE_PRIVATE_KEY_JSON en .env}
+      REDIS_URL: redis://redis:6379/0
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
+      # Base de datos: SQLite en volumen local por defecto; para un Postgres
+      # gratuito en la nube (Neon, Supabase, Railway) define DATABASE_URL en .env:
+      #   postgresql+asyncpg://usuario:clave@ep-xxx.neon.tech/dbname?ssl=require
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////srv/app/data/pacomarca.db}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-100}
+      DEFAULT_LAT: ${DEFAULT_LAT:--14.85}
+      DEFAULT_LON: ${DEFAULT_LON:--70.92}
+      ROI_BUFFER_M: ${ROI_BUFFER_M:-2000}
+      BIOMASS_COEFFICIENT: ${BIOMASS_COEFFICIENT:-2800}
+    volumes:
+      - backend_data:/srv/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Sin root (ya definido en el Dockerfile) y con límites razonables
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # ---------------- Frontend (estáticos) ----------------
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
+  # ---------------- Caché Redis ----------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------- Alerta diaria por email (opcional) ----------------
+  # Perfil "jobs": no arranca con `up -d`; se ejecuta bajo demanda o por cron:
+  #   docker compose --profile jobs run --rm alerta
+  alerta:
+    build: ./backend
+    profiles: ["jobs"]
+    environment:
+      API_URL: http://backend:8000
+      DEFAULT_LAT: ${DEFAULT_LAT:--14.85}
+      DEFAULT_LON: ${DEFAULT_LON:--70.92}
+      ANIOS_ALERTA: ${ANIOS_ALERTA:-20}
+      ALERTA_UMBRAL_PORCENTAJE: ${ALERTA_UMBRAL_PORCENTAJE:--15}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      ALERTA_EMAIL_DESTINO: ${ALERTA_EMAIL_DESTINO:-}
+    volumes:
+      - ./deploy/jobs:/srv/jobs:ro
+    command: ["python", "/srv/jobs/alerta_diaria.py"]
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  caddy_data:    # certificados TLS
+  caddy_config:
+  redis_data:
+  backend_data:  # base de datos SQLite (puntos guardados + historial de alertas)

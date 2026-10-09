@@ -1,0 +1,32 @@
+{
+  "name": "Pacomarca Scientific Suite",
+  "short_name": "Pacomarca",
+  "description": "Monitoreo de pastizales y forraje del fundo Pacomarca (Puno, Perú) mediante teledetección.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16120d",
+  "theme_color": "#b1451c",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

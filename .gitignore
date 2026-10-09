@@ -1,0 +1,39 @@
+# ============================================================
+# .gitignore raíz - Pacomarca Scientific Suite
+# ============================================================
+
+# --- Secretos: JAMÁS al repositorio ---
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.local
+*.pem
+*.key
+service-account*.json
+gee-credentials*.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# --- Base de datos local (SQLite de desarrollo) ---
+data/
+*.db
+*.sqlite3
+
+# --- Node ---
+node_modules/
+dist/
+npm-debug.log*
+
+# --- IDE / SO ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+# Archivos que NO entran a la imagen del backend
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+tests/
+Dockerfile
+docker-compose*.yml
+.git/
+.gitignore

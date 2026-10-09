@@ -1,0 +1,40 @@
+# Reverse proxy de Caddy.
+# SITE_ADDRESS llega como variable de entorno desde docker-compose (.env):
+#   - Producción:  SITE_ADDRESS=pacomarca.tudominio.com  -> HTTPS automático (Let's Encrypt)
+#   - Local:       SITE_ADDRESS=:80                      -> solo HTTP
+# IMPORTANTE: reenviar la IP real del visitante (X-Forwarded-For) para el rate limiting.
+
+{$SITE_ADDRESS} {
+	# Compresión y cabeceras básicas
+	encode zstd gzip
+
+	# --- API: al backend FastAPI ---
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# --- Documentación OpenAPI (opcional: comenta el bloque para ocultarla) ---
+	handle /docs {
+		reverse_proxy backend:8000
+	}
+	handle /redoc {
+		reverse_proxy backend:8000
+	}
+	handle /openapi.json {
+		reverse_proxy backend:8000
+	}
+
+	# --- Todo lo demás: frontend estático ---
+	handle {
+		reverse_proxy frontend:80
+	}
+
+	# Seguridad a nivel de proxy (las demás cabeceras las pone FastAPI)
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+}

@@ -1,0 +1,73 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Tokens de diseño "Tierra Andina": modo claro (por defecto) y oscuro.
+   Los colores se definen como tripletos RGB para que Tailwind pueda
+   aplicar modificadores de opacidad (p. ej. bg-accent/10, bg-surface/95).
+   El modo oscuro se activa con la clase .dark en <html>,
+   que gestiona ThemeProvider (respetando prefers-color-scheme).
+   ============================================================ */
+:root {
+  /* Neutrales cálidos: hueso, arena, tierra */
+  --bg: 247 243 236; /* #f7f3ec */
+  --surface: 255 252 247; /* #fffcf7 */
+  --surface-2: 239 231 218; /* #efe7da */
+  --border: 227 217 200; /* #e3d9c8 */
+  --text: 43 36 24; /* #2b2418 */
+  --text-secondary: 109 95 75; /* #6d5f4b - contraste >= 5:1 sobre surface (AA) */
+
+  /* Acentos: terracotta, verde pasto, ocre y arcilla */
+  --accent: 177 69 25; /* #b1451c terracotta (texto claro encima >= 4.5:1) */
+  --accent-fg: 255 248 242; /* #fff8f2 */
+  --success: 62 117 36; /* #3e7524 verde pasto */
+  --warning: 161 98 7; /* #a16207 ocre */
+  --danger: 178 58 44; /* #b23a2c arcilla */
+  --danger-fg: 255 255 255; /* #ffffff */
+  --skeleton: 233 224 210; /* #e9e0d2 */
+}
+
+.dark {
+  /* Tierra nocturna: marrones profundos */
+  --bg: 22 18 13; /* #16120d */
+  --surface: 31 25 19; /* #1f1913 */
+  --surface-2: 43 35 27; /* #2b231b */
+  --border: 58 47 36; /* #3a2f24 */
+  --text: 237 228 211; /* #ede4d3 */
+  --text-secondary: 179 164 141; /* #b3a48d */
+
+  --accent: 224 118 67; /* #e07643 terracotta claro */
+  --accent-fg: 36 20 7; /* #241407 texto oscuro sobre terracotta claro */
+  --success: 149 193 97; /* #95c161 */
+  --warning: 227 179 65; /* #e3b341 */
+  --danger: 238 124 102; /* #ee7c66 */
+  --danger-fg: 43 20 16; /* #2b1410 */
+  --skeleton: 43 35 27; /* #2b231b */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-bg font-sans text-fg antialiased;
+  overflow-x: hidden; /* sin scroll horizontal en ningún breakpoint */
+}
+
+/* Foco visible en toda la interfaz (WCAG 2.1 AA - 2.4.7) */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Ajustes finos del mapa */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+.maplibregl-canvas {
+  cursor: crosshair;
+}

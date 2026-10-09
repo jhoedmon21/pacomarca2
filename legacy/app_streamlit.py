@@ -1,3 +1,9 @@
+import os
+
+# Workaround para geemap 0.37.x: fuerza el backend folium al importar el paquete.
+# Evita: BoxKeyError "'Box' object has no attribute 'xyz_to_folium'"
+os.environ.setdefault("USE_FOLIUM", "1")
+
 import streamlit as st
 import ee
 import geemap.foliumap as geemap
@@ -6,7 +12,6 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import requests
-import os
 from datetime import datetime, timedelta
 
 # ==========================================
@@ -23,14 +28,18 @@ st.set_page_config(
 # 2. CONEXIÓN SEGURA A LA NUBE (GEE)
 # ==========================================
 try:
-    # Intenta leer el token desde los secretos de Streamlit Cloud
-    if "earth_engine" in st.secrets:
-        credentials = st.secrets["earth_engine"]["token"]
-        home = os.path.expanduser("~")
-        path = os.path.join(home, ".config", "earthengine")
-        os.makedirs(path, exist_ok=True)
-        with open(os.path.join(path, "credentials"), "w") as f:
-            f.write(credentials)
+    # Intenta leer el token desde los secretos de Streamlit Cloud (si existen)
+    try:
+        if "earth_engine" in st.secrets:
+            credentials = st.secrets["earth_engine"]["token"]
+            home = os.path.expanduser("~")
+            path = os.path.join(home, ".config", "earthengine")
+            os.makedirs(path, exist_ok=True)
+            with open(os.path.join(path, "credentials"), "w") as f:
+                f.write(credentials)
+    except FileNotFoundError:
+        # No hay secrets.toml local: se usan las credenciales ya guardadas en el equipo
+        pass
     
     # Inicia la conexión
     ee.Initialize(project='egresados-q9tr')
