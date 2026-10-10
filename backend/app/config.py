@@ -44,8 +44,9 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8000)
     app_version: str = Field(default="1.0.0")
 
-    # --- CORS (separado por comas si viene como cadena) ---
-    allowed_origins: List[str] = Field(
+    # --- CORS (separado por comas si viene como cadena; la Union permite
+    # que pydantic-settings tolere valores no-JSON y el validador los parta) ---
+    allowed_origins: List[str] | str = Field(
         default=["http://localhost:5173", "http://localhost:3000"],
         description="Orígenes permitidos, separados por comas",
     )
