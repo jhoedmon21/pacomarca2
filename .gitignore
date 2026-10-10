@@ -37,3 +37,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- Railway CLI (config local de link) ---
+.railway/
