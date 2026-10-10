@@ -1,0 +1,16 @@
+# ============================================================
+# Railway - configuración del backend (raíz del repo)
+# El Dockerfile vive en backend/, así que se lo indicamos aquí
+# para que Railway pueda compilar desde la raíz del repositorio.
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips *"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
