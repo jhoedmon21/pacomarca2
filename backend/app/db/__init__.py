@@ -29,18 +29,23 @@ def get_engine() -> AsyncEngine:
     """Crea (una sola vez) el motor según DATABASE_URL."""
     global _engine, _session_factory
     if _engine is None:
+        url = settings.database_url
+        # Railway/Render/Neon dan URLs "postgresql://...": SQLAlchemy async
+        # necesita el driver asyncpg. Se añade automáticamente para que la
+        # variable de entorno funcione tal cual la entrega el proveedor.
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            logger.info("DATABASE_URL convertida a postgresql+asyncpg:// para asyncpg")
         # SQLite necesita su directorio creado y evita el bloqueo de WAL
         # multi-conn en Windows/contenedor.
-        if settings.database_url.startswith("sqlite"):
-            ruta = settings.database_url.split("///")[-1]
+        if url.startswith("sqlite"):
+            ruta = url.split("///")[-1]
             Path(ruta).parent.mkdir(parents=True, exist_ok=True)
         _engine = create_async_engine(
-            settings.database_url,
+            url,
             echo=settings.database_echo,
             pool_pre_ping=True,
-            connect_args={"check_same_thread": False}
-            if settings.database_url.startswith("sqlite")
-            else {},
+            connect_args={"check_same_thread": False} if url.startswith("sqlite") else {},
         )
         _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
         dialecto = _engine.dialect.name
