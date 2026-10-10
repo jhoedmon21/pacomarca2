@@ -13,6 +13,7 @@ import logging
 import os
 import threading
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import ee
@@ -56,6 +57,25 @@ class GEEService:
                 return f.read()
         return raw  # contenido JSON embebido
 
+    def _instalar_credenciales_persistentes(self, key_data: str) -> None:
+        """Escribe credenciales OAuth (el mismo JSON que genera
+        `earthengine authenticate` en ~/.config/earthengine/credentials)
+        en la ruta well-known, para que `ee.Initialize` las cargue en
+        contenedores donde ese archivo no existe (Railway, Render...)."""
+        try:
+            json.loads(key_data)  # validar formato antes de instalar
+        except ValueError as exc:
+            raise GEEError("GEE_PRIVATE_KEY_JSON no contiene un JSON válido.") from exc
+        try:
+            from ee.oauth import get_credentials_path
+
+            ruta = get_credentials_path()
+            Path(ruta).parent.mkdir(parents=True, exist_ok=True)
+            Path(ruta).write_text(key_data, encoding="utf-8")
+            logger.info("Credenciales persistentes GEE instaladas desde variable")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("No se pudieron instalar las credenciales persistentes: %s", exc)
+
     def _initialize(self) -> None:
         """Inicializa EE con cuenta de servicio. Si falla, la app arranca
         en modo degradado (los endpoints devuelven 503 con mensaje claro)."""
@@ -70,6 +90,11 @@ class GEEService:
                     )
                     ee.Initialize(credentials, project=settings.gee_project)
                 else:
+                    # Sin cuenta de servicio: si la variable trae credenciales
+                    # OAuth persistentes (formato earthengine authenticate),
+                    # instalarlas en la ruta well-known y usarlas como fallback.
+                    if key_data and '"refresh_token"' in key_data:
+                        self._instalar_credenciales_persistentes(key_data)
                     # Fallback: credenciales persistentes locales (ee.Authenticate)
                     ee.Initialize(project=settings.gee_project)
                 self._initialized = True
