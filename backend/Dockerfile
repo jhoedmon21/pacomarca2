@@ -40,10 +40,12 @@ USER appuser
 
 EXPOSE 8000
 
-# Healthcheck: si /api/health falla, Docker reinicia/marca unhealthy
+# Healthcheck: si /api/health falla, Docker reinicia/marca unhealthy.
+# Usa $PORT porque Railway/Render inyectan su propio puerto.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4); sys.exit(0 if r.status==200 else 1)"
+    CMD sh -c "python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:${PORT:-8000}/api/health', timeout=4); sys.exit(0 if r.status==200 else 1)\""
 
 # 1 worker por defecto: GEE mantiene estado por proceso.
 # Para escalar, subir workers vía comando en docker-compose.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# $PORT: Railway/Render/Fly lo inyectan; en Docker local cae a 8000.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips *"]

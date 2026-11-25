@@ -73,7 +73,7 @@ export function AlertsTab() {
   const stats = useStats(lat, lon, years, layer)
 
   if (stats.isError) {
-    return <ErrorState onReintentar={() => stats.refetch()} />
+    return <ErrorState mensaje={stats.error?.message} onReintentar={() => stats.refetch()} />
   }
 
   const datos = stats.data

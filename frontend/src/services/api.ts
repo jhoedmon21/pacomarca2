@@ -20,12 +20,47 @@ import type {
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
 
+const AYUDA_API =
+  'El frontend no está conectado a la API: define VITE_API_URL con la URL pública del backend.'
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     mensaje: string,
   ) {
     super(mensaje)
+  }
+}
+
+/** ¿La respuesta es JSON? Evita el críptico "Unexpected token '<'" cuando llega HTML. */
+function esJson(respuesta: Response): boolean {
+  return (respuesta.headers.get('content-type') ?? '').includes('json')
+}
+
+/** Lee el cuerpo como JSON o lanza un ApiError explicando qué pasó realmente. */
+async function leerJson<T>(respuesta: Response, ruta: string): Promise<T> {
+  if (!esJson(respuesta)) {
+    const esHtml = (respuesta.headers.get('content-type') ?? '').includes('html')
+    throw new ApiError(
+      respuesta.status,
+      esHtml
+        ? `La ruta ${ruta} devolvió HTML en vez de JSON (HTTP ${respuesta.status}). ${AYUDA_API}`
+        : `Respuesta no JSON al llamar ${ruta} (HTTP ${respuesta.status}).`,
+    )
+  }
+  try {
+    return (await respuesta.json()) as T
+  } catch {
+    throw new ApiError(respuesta.status, `La API devolvió un JSON inválido en ${ruta}.`)
+  }
+}
+
+/** fetch con un mensaje claro cuando no hay red o el host no existe. */
+async function pedir(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init)
+  } catch {
+    throw new ApiError(0, `No se pudo contactar la API en ${url}. ${AYUDA_API}`)
   }
 }
 
@@ -41,9 +76,9 @@ async function get<T>(ruta: string, params?: Record<string, string | number>): P
   for (const [clave, valor] of Object.entries(params ?? {})) qs.set(clave, String(valor))
   const url = `${BASE}/api${ruta}${qs.toString() ? `?${qs.toString()}` : ''}`
 
-  const respuesta = await fetch(url, { headers: { Accept: 'application/json' } })
+  const respuesta = await pedir(url, { headers: { Accept: 'application/json' } })
   if (!respuesta.ok) throw await parseError(respuesta, ruta)
-  return (await respuesta.json()) as T
+  return leerJson<T>(respuesta, ruta)
 }
 
 async function enviar<T>(
@@ -51,14 +86,14 @@ async function enviar<T>(
   metodo: 'POST' | 'PATCH' | 'DELETE',
   cuerpo?: unknown,
 ): Promise<T> {
-  const respuesta = await fetch(`${BASE}/api${ruta}`, {
+  const respuesta = await pedir(`${BASE}/api${ruta}`, {
     method: metodo,
     headers: cuerpo !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
   })
   if (!respuesta.ok) throw await parseError(respuesta, ruta)
   if (respuesta.status === 204) return undefined as T
-  return (await respuesta.json()) as T
+  return leerJson<T>(respuesta, ruta)
 }
 
 export const api = {

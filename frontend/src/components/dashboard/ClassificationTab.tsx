@@ -18,7 +18,7 @@ export function ClassificationTab() {
   const clasificacion = useClassification(lat, lon)
 
   if (clasificacion.isError) {
-    return <ErrorState onReintentar={() => clasificacion.refetch()} />
+    return <ErrorState mensaje={clasificacion.error?.message} onReintentar={() => clasificacion.refetch()} />
   }
 
   const datos = clasificacion.data

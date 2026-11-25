@@ -105,7 +105,7 @@ export function TimeseriesTab() {
       </div>
 
       {serie.isError ? (
-        <ErrorState onReintentar={() => serie.refetch()} />
+        <ErrorState mensaje={serie.error?.message} onReintentar={() => serie.refetch()} />
       ) : serie.isLoading ? (
         <div className="space-y-2" aria-busy="true" aria-label={t('common.cargando')}>
           <Skeleton className="h-8 w-full" />

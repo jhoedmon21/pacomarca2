@@ -1,0 +1,16 @@
+# ============================================================
+# Railway - configuración del backend (se construye desde la raíz
+# del repo con el Dockerfile raíz, que copia backend/ al contexto).
+# No se fija startCommand: el CMD del Dockerfile ya respeta $PORT,
+# que es el puerto que Railway inyecta en el contenedor.
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

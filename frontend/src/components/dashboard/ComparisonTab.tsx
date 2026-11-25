@@ -45,7 +45,7 @@ export function ComparisonTab() {
   }, [serie.data, indice, seleccionA, seleccionB])
 
   if (serie.isError) {
-    return <ErrorState onReintentar={() => serie.refetch()} />
+    return <ErrorState mensaje={serie.error?.message} onReintentar={() => serie.refetch()} />
   }
   if (serie.isLoading) {
     return (

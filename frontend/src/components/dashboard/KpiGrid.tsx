@@ -98,7 +98,7 @@ export function KpiGrid() {
   if (stats.isError) {
     return (
       <Card>
-        <ErrorState onReintentar={() => stats.refetch()} />
+        <ErrorState mensaje={stats.error?.message} onReintentar={() => stats.refetch()} />
       </Card>
     )
   }
