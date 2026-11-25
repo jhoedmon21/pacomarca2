@@ -1,0 +1,44 @@
+# ============================================================
+# Render Blueprint - backend Pacomarca (alternativa a Railway).
+#
+# Uso: Render Dashboard -> New -> Blueprint -> conecta el repo
+# jhoedmon21/pacomarca2. Render lee este archivo y crea el
+# servicio con todo preconfigurado. Solo tendras que pegar el
+# valor de GEE_PRIVATE_KEY_JSON cuando lo pida (sync: false).
+#
+# El Dockerfile de la raiz ya respeta $PORT, que es lo que
+# Render inyecta en el contenedor.
+# ============================================================
+
+services:
+  - type: web
+    name: pacomarca-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: GEE_PROJECT
+        value: egresados-q9tr
+      # Cuenta de servicio desactivada a proposito: la app usa el
+      # fallback OAuth (refresh_token) cuando este email esta vacio.
+      - key: GEE_SERVICE_ACCOUNT_EMAIL
+        value: ""
+      # Contenido del JSON de credenciales OAuth de Earth Engine
+      # (~/.config/earthengine/credentials). Se pide al crear el
+      # servicio y no queda en el repositorio.
+      - key: GEE_PRIVATE_KEY_JSON
+        sync: false
+      # Dominio del frontend en Vercel: habilita CORS.
+      - key: ALLOWED_ORIGINS
+        value: https://pacomarca2.vercel.app
+      # Sin Postgres: SQLite dentro del contenedor. En el plan free
+      # el disco es efimero, asi que los puntos guardados se pierden
+      # en cada reinicio (los datos satelitales no se ven afectados).
