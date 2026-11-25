@@ -1,0 +1,14 @@
+# Contexto mínimo para `railway up`: el Dockerfile solo necesita backend/.
+.git
+.github
+frontend
+legacy
+docs
+data
+.pytest_cache
+**/__pycache__
+backend/.venv
+backend/.pytest_cache
+*.md
+analisis_proyecto.py
+analizar_proyecto.py
